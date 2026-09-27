@@ -1,0 +1,5 @@
+id,fundstelle,pruefpunkt,status,faellig_am,verantwortung,bemerkung
+CHK-01-01,Themenordner 01,Hygieneplan pruefen,offen,2026-07-20,QM-Beauftragte,R&D-Verweis noch offen
+CHK-03-01,Themenordner 03,Notfallplan aktualitaet pruefen,erledigt,2026-07-10,Aerztliche Leitung,Freigabe in Demo vermerkt
+CHK-07-05,Themenordner 07,Praxisbegehungs-Checkliste vorbereiten,offen,2026-08-15,QM-Beauftragte,Termin fuer Teamrunde offen
+CHK-10-01,Themenordner 10,Medizinproduktebuch gegen Demo-Bestand abgleichen,offen,2026-07-01,QM-Beauftragte,Nur fiktive Geraete-Kategorien verwenden

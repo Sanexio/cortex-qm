@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="de">
+<meta charset="utf-8">
+<title>Begehungs-Tracker Status-Report</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 32px; color: #1f2933; }
+h1 { font-size: 24px; margin: 0 0 8px; }
+.summary { display: flex; gap: 12px; margin: 18px 0; }
+.summary span { border: 1px solid #b8c2cc; padding: 6px 10px; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th, td { border: 1px solid #b8c2cc; padding: 7px; vertical-align: top; }
+th { background: #eef2f7; text-align: left; }
+tr.erledigt td { background: #eef8ef; }
+tr.offen td { background: #fff8e6; }
+tr.ueberfaellig td { background: #fdeeee; }
+@media print { body { margin: 12mm; } .summary { display: block; } table { font-size: 10px; } }
+</style>
+<h1>Begehungs-Tracker Status-Report</h1>
+<p>Demo-Praxis Musterstadt · Stichtag 2026-07-25</p>
+<div class="summary">
+  <span>erledigt: 1</span>
+  <span>offen: 1</span>
+  <span>ueberfaellig: 2</span>
+</div>
+<table>
+<thead><tr><th>ID</th><th>Fundstelle</th><th>Pruefpunkt</th><th>Verantwortung</th><th>Faellig am</th><th>Status</th><th>Bemerkung</th></tr></thead>
+<tbody>
+<tr class="ueberfaellig"><td>CHK-01-01</td><td>Themenordner 01</td><td>Hygieneplan pruefen</td><td>QM-Beauftragte</td><td>2026-07-20</td><td>ueberfaellig</td><td>R&amp;D-Verweis noch offen</td></tr><tr class="erledigt"><td>CHK-03-01</td><td>Themenordner 03</td><td>Notfallplan aktualitaet pruefen</td><td>Aerztliche Leitung</td><td>2026-07-10</td><td>erledigt</td><td>Freigabe in Demo vermerkt</td></tr><tr class="offen"><td>CHK-07-05</td><td>Themenordner 07</td><td>Praxisbegehungs-Checkliste vorbereiten</td><td>QM-Beauftragte</td><td>2026-08-15</td><td>offen</td><td>Termin fuer Teamrunde offen</td></tr><tr class="ueberfaellig"><td>CHK-10-01</td><td>Themenordner 10</td><td>Medizinproduktebuch gegen Demo-Bestand abgleichen</td><td>QM-Beauftragte</td><td>2026-07-01</td><td>ueberfaellig</td><td>Nur fiktive Geraete-Kategorien verwenden</td></tr>
+</tbody>
+</table>
+</html>

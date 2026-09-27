@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "nur_platzhalter": true,
+  "vorlagen": [
+    {
+      "pfad": "dokumente/aktionsplan.md",
+      "phase": "B.4",
+      "typ": "markdown-strukturvorlage"
+    },
+    {
+      "pfad": "dokumente/hygieneplan.md",
+      "phase": "B.4",
+      "typ": "markdown-strukturvorlage"
+    },
+    {
+      "pfad": "dokumente/medizinproduktebuch.md",
+      "phase": "B.4",
+      "typ": "markdown-strukturvorlage"
+    },
+    {
+      "pfad": "dokumente/qm-handbuch.md",
+      "phase": "B.4",
+      "typ": "markdown-strukturvorlage"
+    },
+    {
+      "pfad": "dokumente/sop.md",
+      "phase": "B.4",
+      "typ": "markdown-strukturvorlage"
+    },
+    {
+      "pfad": "arbeitsdateien/kommentar-uebersicht.md",
+      "phase": "B.5",
+      "typ": "markdown-strukturvorlage"
+    },
+    {
+      "pfad": "arbeitsdateien/reviewprotokoll.md",
+      "phase": "B.5",
+      "typ": "markdown-strukturvorlage"
+    },
+    {
+      "pfad": "arbeitsdateien/schulungsnachweis.md",
+      "phase": "B.5",
+      "typ": "markdown-strukturvorlage"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+# Tenant-spezifische Listen (gitignored, damit Tenant-Forks ihre
+# konkreten Praxis-Inhalte sicher halten — Personal-Namen, konkrete
+# Räumlichkeiten, individuelle Gerätelisten, patientenbezogene Daten)
+rules/PERSONAL_TENANT.md
+rules/GERAETE_TENANT.md
+rules/RAEUMLICHKEITEN_TENANT.md
+rules/FEHLERPROTOKOLL_TENANT.md
+
+# Live-Arbeitsdokumente (DSGVO: oft mit Patient-Bezug oder Personal-
+# bezogenen Schulungsnachweisen). NIEMALS committen.
+01_Dokumente/
+02_Vorlagen_und_Anlagen/
+03_Arbeitsdateien/
+
+# Word-Sperr- und Backup-Dateien
+~$*.docx
+~$*.xlsx
+*.docx.bak
+
+# OS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.orig
+*.bak
+
+# Python (für Tooling-Anbindung, falls Tenant Python nutzt)
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# Logs
+*.log
+*.pyo
+.tmp/

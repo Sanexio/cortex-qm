@@ -1,0 +1,20 @@
+{
+  "name": "cortex-qm",
+  "ring": "gelb",
+  "runtime": {
+    "zweig": "python_floor",
+    "python_floor": "3.9",
+    "dienste": []
+  },
+  "daten_pfad": "~/.cortex/apps/cortex-qm/var",
+  "modell": {
+    "basis_tier": "tiny",
+    "tiny_degradiert_ok": true
+  },
+  "selbsttest": null,
+  "daten": {
+    "klasse_max": "K1",
+    "phi": false
+  },
+  "_begruendung_werte": "K1 und phi=false beschreiben den aktuellen generischen Lieferbaum aus Regeln, Strukturvorlagen, Dokumentation und fiktiven Demos; keine Aussage zur Git-Historie oder zu privaten Arbeitskopien. selbsttest=null: kein installierter Selbsttest; die Repo-Demos laufen separat mit bash examples/run-demo.sh."
+}
