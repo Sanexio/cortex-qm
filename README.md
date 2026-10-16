@@ -50,6 +50,47 @@ Regelwerk und Demos sind öffentlich nutzbare Bausteine; ausgefüllte
 Praxisdokumente bleiben privat. Die eigenständigen
 [Integrationshinweise](docs/ENGINE_INTEGRATION.md) beschreiben die Schnittstelle.
 
+## Architektur: Framework-Schicht vs. Tenant
+
+Das Repo trennt zwei Welten, die nie vermischt werden:
+
+| Schicht | Ort | Inhalt |
+|---|---|---|
+| **Framework** | `cortex_qm/` (Bibliothek + CLI), `rules/` (normatives Regelwerk), `dokumente/` + `arbeitsdateien/` (leere Strukturvorlagen) | tenant-neutral, enthält keinerlei Praxis-Inhalte |
+| **Tenant** | `*_TENANT.md` (gitignored), `01_Dokumente/` … `03_Arbeitsdateien/` (gitignored) — und als fiktive Referenz der Demo-Tenant unter `examples/` | alles Praxis-Spezifische: Namen, Rollen, Bestände, ausgefüllte Dokumente |
+
+Die Grenze ist im Code ein **expliziter Injektionspunkt**: jede Ausgabe, die
+einen Praxisnamen oder Rollen trägt, bekommt sie als `TenantProfil`
+(`cortex_qm/tenant.py`) bzw. als Eingabedatei übergeben — es gibt keinen
+eingebauten Default-Tenant. Die Demos unter `examples/` sind ausdrücklich
+fiktiv und dienen der Testsuite als eingefrorene Referenz (nur lesend):
+Paritätstests belegen, dass die Framework-Schicht mit dem Demo-Tenant als
+Eingabe byte-identisch dieselben Artefakte erzeugt. Ein eigener Test
+(`tests/test_tenant_grenze.py`) weist mechanisch nach, dass die
+Framework-Schicht tenant-frei bleibt.
+
+### Bibliothek + CLI
+
+Die Kernlogik der Demos ist als installierbares Paket verfügbar
+(stdlib-only, keine Laufzeit-Abhängigkeiten, Python ≥3.9):
+
+```bash
+pip install .          # Bibliothek + Konsolenbefehl cortex-qm
+cortex-qm checkliste --kategorien rules/CATEGORIES_EXAMPLE.md \
+  --praxis "<Praxisname>" --rolle "QM-Beauftragte" --out-md checkliste.md
+cortex-qm tracker --csv begehung.csv --praxis "<Praxisname>" --out-md report.md
+cortex-qm kommentare eingabe.docx auswertung.md
+```
+
+Diese Bibliothek/CLI ist die Basis für die spätere native App-Auslieferung
+(Tauri-Schablone); die App-Schale bettet genau diese Schicht ein.
+
+### Tests
+
+```bash
+python3 -m unittest discover    # von der Repo-Wurzel, stdlib-only
+```
+
 ## Regulatorische Basis (Auszug aus `rules/CORE_RULES.md`)
 
 Das Regelwerk verankert in:
