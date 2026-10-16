@@ -1,0 +1,32 @@
+# Build-Definition der Framework-Schicht (Bibliothek + CLI).
+# Bewusst ohne Laufzeit-Abhaengigkeiten: alles laeuft auf der Stdlib,
+# Python-Floor 3.9 (siehe paket-manifest.json). Die App-Schale (Tauri)
+# bettet spaeter genau diese Bibliothek/CLI ein.
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cortex-qm"
+version = "0.1.0"
+description = "Framework-Bibliothek und CLI fuer das cortex-qm-Regelwerk (QM in der Arztpraxis)"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Apache-2.0" }
+keywords = ["qm", "arztpraxis", "qualitaetsmanagement", "checkliste", "docx"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+# Keine Laufzeit-Abhaengigkeiten — Stdlib only.
+dependencies = []
+
+[project.scripts]
+cortex-qm = "cortex_qm.cli:main"
+
+[project.urls]
+Repository = "https://github.com/Sanexio/cortex-qm"
+
+[tool.setuptools]
+packages = ["cortex_qm"]

@@ -34,6 +34,11 @@ __pycache__/
 .venv/
 venv/
 
+# Build-Artefakte der Bibliothek/CLI (pyproject.toml)
+build/
+dist/
+*.egg-info/
+
 # Logs
 *.log
 *.pyo
