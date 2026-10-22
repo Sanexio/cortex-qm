@@ -8,9 +8,18 @@
   "klasse": "K0",
   "symbol": "icon.png",
   "symbol_qr": "icon-qr.png",
-  "plattformen": ["macos", "windows", "linux"],
-  "update_kanal": "https://updates.example.com/cortex-qm/{{target}}/{{arch}}/{{current_version}}",
+  "plattformen": [
+    "macos",
+    "windows",
+    "linux"
+  ],
+  "update_kanal": "https://api.github.com/repos/Sanexio/cortex-qm/releases/latest",
   "lizenz_app_kennung": "cortex-qm",
   "repository": "Sanexio/cortex-qm",
-  "einzelapp_zweig": "einzelapp-20261022"
+  "einzelapp_zweig": "einzelapp-20261022",
+  "update_feed": {
+    "url": "https://api.github.com/repos/Sanexio/cortex-qm/releases/latest",
+    "status": "vorbereitet",
+    "asset": "latest.json"
+  }
 }

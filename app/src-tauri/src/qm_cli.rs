@@ -1,55 +1,34 @@
-use std::process::Command;
-
-use crate::qm_content::repo_root;
-
-const DEMO_KATEGORIEN: &str = "rules/CATEGORIES_EXAMPLE.md";
-
-/// Erzeugt eine Demo-Begehungs-Checkliste über die Python-Bibliothek (nur Beispiel-Kategorien).
+// Native render of the existing K0 example checklist; no external process or temporary document.
+const VORLAGE: &str = include_str!("checkliste-vorlage.md");
 pub fn checkliste_demo(praxis: &str, rolle: &str) -> Result<String, String> {
-    if praxis.trim().is_empty() {
-        return Err("Praxisname fehlt".into());
+    fn safe(s: &str) -> bool {
+        !s.trim().is_empty()
+            && s.len() <= 200
+            && !s
+                .chars()
+                .any(|c| c.is_control() || c == '|' || c == '{' || c == '}')
     }
-    let root = repo_root();
-    let kategorien = root.join(DEMO_KATEGORIEN);
-    if !kategorien.is_file() {
-        return Err("Beispiel-Kategorien nicht gefunden".into());
+    if !safe(praxis) || !safe(rolle) {
+        return Err("Name/Rolle ungueltig (1–200 Zeichen, keine Steuerzeichen)".into());
     }
-    let out_md = std::env::temp_dir().join(format!(
-        "cortex-qm-checkliste-{}.md",
-        std::process::id()
-    ));
-    let mut cmd = Command::new("python3");
-    cmd.current_dir(&root)
-        .env("PYTHONPATH", &root)
-        .args([
-            "-m",
-            "cortex_qm",
-            "checkliste",
-            "--kategorien",
-            DEMO_KATEGORIEN,
-            "--praxis",
-            praxis.trim(),
-            "--rolle",
-            rolle.trim(),
-            "--out-md",
-        ])
-        .arg(&out_md);
-    let output = cmd.output().map_err(|e| format!("Python nicht startbar: {e}"))?;
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(format!("cortex-qm checkliste fehlgeschlagen: {stderr}"));
-    }
-    std::fs::read_to_string(&out_md).map_err(|e| e.to_string())
+    Ok(VORLAGE
+        .replace("{{PRAXIS}}", praxis.trim())
+        .replace("{{ROLLE}}", rolle.trim()))
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
     #[test]
-    fn demo_checkliste_erzeugt_markdown() {
-        let text = checkliste_demo("Demo-Praxis", "QM-Beauftragte").expect("checkliste");
-        assert!(text.contains("Demo-Praxis"));
-        assert!(text.contains("Checkliste") || text.contains("checkliste"));
+    fn existing_demo_is_preserved_without_external_runtime() {
+        let s = checkliste_demo("Demo-Praxis", "QM-Beauftragte").unwrap();
+        assert!(s.contains("Demo-Praxis"));
+        assert!(s.contains("CHK-01-01"));
+        assert!(!s.contains("{{"));
+    }
+    #[test]
+    fn hostile_labels_denied() {
+        for s in ["", "x\n# injection", "x|table", "{{ROLLE}}"] {
+            assert!(checkliste_demo(s, "QM").is_err());
+        }
     }
 }

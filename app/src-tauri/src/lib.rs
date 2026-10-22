@@ -31,26 +31,31 @@ fn app_info() -> AppInfo {
 
 #[tauri::command]
 fn rules_list() -> Result<Vec<RuleEntry>, String> {
+    lizenzanzeige::require_access()?;
     qm_content::rules_list()
 }
 
 #[tauri::command]
 fn rules_read(pfad: String) -> Result<String, String> {
+    lizenzanzeige::require_access()?;
     qm_content::rules_read(&pfad)
 }
 
 #[tauri::command]
 fn vorlagen_list() -> Result<Vec<VorlageEntry>, String> {
+    lizenzanzeige::require_access()?;
     qm_content::vorlagen_list()
 }
 
 #[tauri::command]
 fn vorlagen_read(pfad: String) -> Result<String, String> {
+    lizenzanzeige::require_access()?;
     qm_content::vorlagen_read(&pfad)
 }
 
 #[tauri::command]
 fn checkliste_demo(praxis: String, rolle: String) -> Result<String, String> {
+    lizenzanzeige::require_access()?;
     qm_cli::checkliste_demo(&praxis, &rolle)
 }
 
@@ -61,15 +66,14 @@ fn lizenz_ueberblick() -> lizenzanzeige::LicenseOverview {
 
 #[tauri::command]
 async fn updater_check(app: tauri::AppHandle) -> Result<Option<String>, String> {
-    let mut builder = app.updater_builder();
-    if let Ok(feed) = std::env::var("APP_UPDATE_FEED_URL") {
-        let url: tauri::Url = feed
-            .parse()
-            .map_err(|e| format!("APP_UPDATE_FEED_URL ungueltig: {e}"))?;
-        builder = builder
-            .endpoints(vec![url])
-            .map_err(|e| format!("Update-Feed abgelehnt: {e}"))?;
-    }
+    // Exact private repository; the public verification key is compiled into this app.
+    let builder = app
+        .updater_builder()
+        .endpoints(vec![tauri::Url::parse(
+            "https://api.github.com/repos/Sanexio/cortex-qm/releases/latest",
+        )
+        .map_err(|e| e.to_string())?])
+        .map_err(|e| e.to_string())?;
     let updater = builder.build().map_err(|e| e.to_string())?;
     match updater.check().await {
         Ok(Some(update)) => Ok(Some(update.version.clone())),

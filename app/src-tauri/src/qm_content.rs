@@ -1,148 +1,148 @@
-use std::fs;
-use std::path::PathBuf;
-
+// Only these versioned framework files enter the app. No filesystem lookup at runtime.
 use serde::Serialize;
-
 #[derive(Debug, Serialize, Clone)]
 pub struct RuleEntry {
     pub pfad: String,
     pub titel: String,
 }
-
 #[derive(Debug, Serialize, Clone)]
 pub struct VorlageEntry {
     pub pfad: String,
     pub phase: String,
     pub typ: String,
 }
-
-pub fn repo_root() -> PathBuf {
-    let manifest = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    manifest.join("../..")
+const CONTENT: &[(&str, &str)] = &[
+    (
+        "rules/CATEGORIES_EXAMPLE.md",
+        include_str!("../../../rules/CATEGORIES_EXAMPLE.md"),
+    ),
+    (
+        "rules/CORE_RULES.md",
+        include_str!("../../../rules/CORE_RULES.md"),
+    ),
+    (
+        "rules/GERAETE_EXAMPLE.md",
+        include_str!("../../../rules/GERAETE_EXAMPLE.md"),
+    ),
+    (
+        "rules/PERSONAL_EXAMPLE.md",
+        include_str!("../../../rules/PERSONAL_EXAMPLE.md"),
+    ),
+    (
+        "rules/RAEUMLICHKEITEN_EXAMPLE.md",
+        include_str!("../../../rules/RAEUMLICHKEITEN_EXAMPLE.md"),
+    ),
+    ("rules/SCHEMA.md", include_str!("../../../rules/SCHEMA.md")),
+    (
+        "rules/WORKFLOW.md",
+        include_str!("../../../rules/WORKFLOW.md"),
+    ),
+    (
+        "dokumente/aktionsplan.md",
+        include_str!("../../../dokumente/aktionsplan.md"),
+    ),
+    (
+        "dokumente/hygieneplan.md",
+        include_str!("../../../dokumente/hygieneplan.md"),
+    ),
+    (
+        "dokumente/medizinproduktebuch.md",
+        include_str!("../../../dokumente/medizinproduktebuch.md"),
+    ),
+    (
+        "dokumente/qm-handbuch.md",
+        include_str!("../../../dokumente/qm-handbuch.md"),
+    ),
+    (
+        "dokumente/sop.md",
+        include_str!("../../../dokumente/sop.md"),
+    ),
+    (
+        "arbeitsdateien/kommentar-uebersicht.md",
+        include_str!("../../../arbeitsdateien/kommentar-uebersicht.md"),
+    ),
+    (
+        "arbeitsdateien/reviewprotokoll.md",
+        include_str!("../../../arbeitsdateien/reviewprotokoll.md"),
+    ),
+    (
+        "arbeitsdateien/schulungsnachweis.md",
+        include_str!("../../../arbeitsdateien/schulungsnachweis.md"),
+    ),
+];
+fn read(pfad: &str) -> Result<String, String> {
+    CONTENT
+        .iter()
+        .find(|(p, _)| *p == pfad)
+        .map(|(_, s)| s.to_string())
+        .ok_or_else(|| "Pfad nicht im eingebauten Framework-Katalog".into())
 }
-
-fn erlaubt_regel(rel: &str) -> bool {
-    if rel.contains("..") || rel.starts_with('/') {
-        return false;
-    }
-    rel.starts_with("rules/") && rel.ends_with(".md")
-}
-
-fn erlaubt_vorlage(rel: &str) -> bool {
-    if rel.contains("..") || rel.starts_with('/') {
-        return false;
-    }
-    (rel.starts_with("dokumente/") || rel.starts_with("arbeitsdateien/"))
-        && rel.ends_with(".md")
-}
-
 pub fn rules_list() -> Result<Vec<RuleEntry>, String> {
-    let rules_dir = repo_root().join("rules");
-    if !rules_dir.is_dir() {
-        return Err("Regelwerk-Ordner nicht gefunden".into());
-    }
-    let mut out = Vec::new();
-    for entry in fs::read_dir(&rules_dir).map_err(|e| e.to_string())? {
-        let entry = entry.map_err(|e| e.to_string())?;
-        let path = entry.path();
-        if !path.is_file() {
-            continue;
-        }
-        let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-        if !name.ends_with(".md") || name.contains("TENANT") {
-            continue;
-        }
-        let rel = format!("rules/{name}");
-        let titel = name.trim_end_matches(".md").replace('_', " ");
-        out.push(RuleEntry { pfad: rel, titel });
-    }
-    out.sort_by(|a, b| a.pfad.cmp(&b.pfad));
-    Ok(out)
+    Ok(CONTENT
+        .iter()
+        .filter(|(p, _)| p.starts_with("rules/"))
+        .map(|(p, _)| RuleEntry {
+            pfad: p.to_string(),
+            titel: p
+                .trim_start_matches("rules/")
+                .trim_end_matches(".md")
+                .replace('_', " "),
+        })
+        .collect())
 }
-
 pub fn rules_read(pfad: &str) -> Result<String, String> {
-    if !erlaubt_regel(pfad) {
-        return Err("Pfad nicht erlaubt".into());
+    if !pfad.starts_with("rules/") {
+        return Err("Keine Regel".into());
     }
-    let full = repo_root().join(pfad);
-    let canonical = full.canonicalize().map_err(|e| e.to_string())?;
-    let rules_canon = repo_root()
-        .join("rules")
-        .canonicalize()
-        .map_err(|e| e.to_string())?;
-    if !canonical.starts_with(&rules_canon) {
-        return Err("Pfad ausserhalb des Regelwerks".into());
-    }
-    fs::read_to_string(&canonical).map_err(|e| e.to_string())
+    read(pfad)
 }
-
 pub fn vorlagen_list() -> Result<Vec<VorlageEntry>, String> {
-    let path = repo_root().join("docs/vorlagen-manifest.json");
-    let text = fs::read_to_string(&path).map_err(|e| format!("Manifest nicht lesbar: {e}"))?;
-    let json: serde_json::Value = serde_json::from_str(&text).map_err(|e| e.to_string())?;
-    let items = json
-        .get("vorlagen")
-        .and_then(|v| v.as_array())
-        .ok_or_else(|| "vorlagen-Feld fehlt".to_string())?;
-    let mut out = Vec::new();
-    for item in items {
-        let pfad = item
-            .get("pfad")
-            .and_then(|v| v.as_str())
-            .unwrap_or("")
-            .to_string();
-        if pfad.is_empty() || !erlaubt_vorlage(&pfad) {
-            continue;
-        }
-        out.push(VorlageEntry {
-            pfad,
-            phase: item
-                .get("phase")
-                .and_then(|v| v.as_str())
-                .unwrap_or("")
-                .to_string(),
-            typ: item
-                .get("typ")
-                .and_then(|v| v.as_str())
-                .unwrap_or("")
-                .to_string(),
-        });
-    }
-    Ok(out)
+    let manifest: serde_json::Value =
+        serde_json::from_str(include_str!("../../../docs/vorlagen-manifest.json"))
+            .map_err(|e| e.to_string())?;
+    Ok(manifest["vorlagen"]
+        .as_array()
+        .ok_or("Vorlagen fehlen")?
+        .iter()
+        .filter_map(|v| {
+            let p = v["pfad"].as_str()?;
+            if !CONTENT.iter().any(|(known, _)| *known == p) {
+                return None;
+            }
+            Some(VorlageEntry {
+                pfad: p.into(),
+                phase: v["phase"].as_str().unwrap_or("").into(),
+                typ: v["typ"].as_str().unwrap_or("").into(),
+            })
+        })
+        .collect())
 }
-
 pub fn vorlagen_read(pfad: &str) -> Result<String, String> {
-    if !erlaubt_vorlage(pfad) {
-        return Err("Pfad nicht erlaubt".into());
+    if pfad.starts_with("rules/") {
+        return Err("Keine Vorlage".into());
     }
-    let full = repo_root().join(pfad);
-    let canonical = full.canonicalize().map_err(|e| e.to_string())?;
-    let root = repo_root().canonicalize().map_err(|e| e.to_string())?;
-    if !canonical.starts_with(&root) {
-        return Err("Pfad ausserhalb des Repos".into());
-    }
-    fs::read_to_string(&canonical).map_err(|e| e.to_string())
+    read(pfad)
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
     #[test]
-    fn rules_list_nicht_leer() {
-        let rules = rules_list().expect("rules");
-        assert!(!rules.is_empty());
+    fn standalone_content_is_embedded() {
+        assert!(!rules_list().unwrap().is_empty());
+        for v in vorlagen_list().unwrap() {
+            assert!(!vorlagen_read(&v.pfad).unwrap().is_empty());
+        }
     }
-
     #[test]
-    fn pfad_traversal_abgewiesen() {
-        assert!(rules_read("rules/../README.md").is_err());
-    }
-
-    #[test]
-    fn vorlagen_nur_platzhalter_pfade() {
-        let v = vorlagen_list().expect("vorlagen");
-        assert!(!v.is_empty());
-        assert!(v.iter().all(|e| erlaubt_vorlage(&e.pfad)));
+    fn traversal_unknown_absolute_and_tenant_are_denied() {
+        for p in [
+            "rules/../README.md",
+            "/etc/passwd",
+            "rules/CORE_RULES.md/../../secret",
+            "rules/CATEGORIES_TENANT.md",
+            "templates/unknown.md",
+        ] {
+            assert!(read(p).is_err(), "{p}");
+        }
     }
 }

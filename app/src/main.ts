@@ -134,6 +134,17 @@ async function render(): Promise<void> {
       void paint();
     }));
 
+    const license = await loadLicense();
+    if (active !== "status" && !license.gebucht) {
+      const locked = el("section", "card");
+      locked.append(el("h2", undefined, "Nicht gebucht"), el("p", undefined, "Signierte Freischaltung erforderlich. In-App-Kauf: Freischaltung ohne Zahlung."));
+      const status = el("button", "primary", "Lizenzstatus öffnen");
+      status.addEventListener("click", () => { active = "status"; void paint(); });
+      locked.append(status);
+      body.append(locked);
+      return;
+    }
+
     if (active === "regeln") {
       const card = el("section", "card");
       card.appendChild(el("h2", undefined, "QM-Regelwerk (Framework)"));
@@ -141,7 +152,7 @@ async function render(): Promise<void> {
         el(
           "p",
           "muted",
-          "Normatives Regelwerk aus diesem Repository — Schemata, Kernregeln und Beispiel-Kataloge, keine Tenant-Dateien.",
+          "Normatives Regelwerk aus dem eingebauten Framework — Schemata, Kernregeln und Beispiel-Kataloge, keine Tenant-Dateien.",
         ),
       );
       const list = el("ul", "rules");
@@ -187,7 +198,7 @@ async function render(): Promise<void> {
 
     if (active === "werkzeuge") {
       const card = el("section", "card");
-      card.appendChild(el("h2", undefined, "CLI-Werkzeuge (Demo)"));
+      card.appendChild(el("h2", undefined, "Werkzeuge (Demo)"));
       card.appendChild(
         el(
           "p",
