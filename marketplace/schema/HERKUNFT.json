@@ -1,0 +1,11 @@
+{
+  "zweck": "Angeheftete Kopie des Marketplace-Katalogschemas. Die Kopie liegt hier, damit die Manifest-Pruefung ohne Netzzugriff laeuft; die Felder unten binden sie an eine feste fremde Revision.",
+  "herkunft_repository": "Sanexio/praxiszentrum-theme",
+  "herkunft_pfad": "inc/marketplace/schema/manifest.schema.json",
+  "herkunft_commit": "0497a2fd6a0f8d7a7e981e3e1cd20ad658dbf998",
+  "herkunft_git_blob": "3e1dc349f7bb8d1db0b43b8f0561e1d9504fc113",
+  "sha256": "98ededd3661cb3f2e7d26c10006bf68c37cc728f1bb943e8a50fdf3730d8ea7e",
+  "groesse_bytes": 4804,
+  "uebernommen_am": "2026-10-24",
+  "aktualisieren": "Siehe marketplace/schema/README.md — Datei an der neuen Revision holen, danach herkunft_commit, herkunft_git_blob, sha256 und groesse_bytes hier nachziehen."
+}

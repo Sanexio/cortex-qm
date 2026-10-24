@@ -1,0 +1,196 @@
+name: CI (Linux)
+
+# ---------------------------------------------------------------------------
+# AUSLOESER: bewusst nur manuell.
+#
+# Das Nachbar-Repository Sanexio/cortex-app fuehrt denselben Vorbehalt
+# woertlich ("Kein Push-/Tag-/Zeitplan-Ausloeser: keine automatischen
+# Actions-Minuten"), in Sanexio/workforce-time wurden `push` und
+# `pull_request` am 22.10.2026 ausdruecklich als Kostenentscheidung
+# entfernt. Dieser neue Workflow uebernimmt diese Linie, statt sie
+# stillschweigend zu unterlaufen.
+#
+# Sollen die Pruefungen spaeter automatisch je Pull Request laufen,
+# genuegt es, die folgenden vier Zeilen zu aktivieren — das ist eine
+# Kostenentscheidung von Dr. Stracke, nicht von diesem Zweig:
+#
+#   pull_request:
+#     branches: [main]
+#   push:
+#     branches: [main]
+# ---------------------------------------------------------------------------
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # -------------------------------------------------------------------------
+  # 1) Python-Paket cortex_qm — Stdlib only, keine Laufzeit-Abhaengigkeiten.
+  # -------------------------------------------------------------------------
+  pytest:
+    name: pytest (cortex_qm)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+      - name: Test-Extra installieren (jsonschema, pytest)
+        run: python -m pip install --upgrade pip && python -m pip install -e '.[test]'
+      - name: pytest im Wurzelverzeichnis
+        run: python -m pytest -q
+
+  # -------------------------------------------------------------------------
+  # 2) Marketplace-Manifest gegen das angeheftete Katalogschema.
+  #    Kein Netzzugriff: das Schema liegt als angeheftete Kopie unter
+  #    marketplace/schema/ (Herkunft und Revision in HERKUNFT.json).
+  #    Der optionale Abgleich unten geht ausschliesslich gegen GitHub.
+  # -------------------------------------------------------------------------
+  manifest:
+    name: Marketplace-Manifest validieren
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+      - name: Test-Extra installieren (jsonschema, pytest)
+        run: python -m pip install --upgrade pip && python -m pip install -e '.[test]'
+      - name: Validierung (offline, gegen die angeheftete Schema-Kopie)
+        run: python -m pytest tests/test_marketplace_manifest.py -q
+      # Optional und nur gegen GitHub: prueft, ob die Kopie noch die
+      # angeheftete fremde Revision ist. Laeuft nur mit Lesetoken fuer das
+      # private Theme-Repository; ohne Token sagt der Schritt das deutlich,
+      # die Pflichtpruefung oben bleibt davon unberuehrt.
+      - name: Abgleich der Kopie mit der angehefteten Revision
+        env:
+          GH_TOKEN: ${{ secrets.PRAXISZENTRUM_THEME_READ_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::notice::PRAXISZENTRUM_THEME_READ_TOKEN fehlt — Drift-Abgleich uebersprungen."
+            echo "Die Pflichtpruefung (sha256 gegen HERKUNFT.json) ist oben bereits gelaufen."
+            exit 0
+          fi
+          commit=$(python -c "import json;print(json.load(open('marketplace/schema/HERKUNFT.json'))['herkunft_commit'])")
+          pfad=$(python -c "import json;print(json.load(open('marketplace/schema/HERKUNFT.json'))['herkunft_pfad'])")
+          gh api "repos/Sanexio/praxiszentrum-theme/contents/${pfad}?ref=${commit}" --jq .content > oben.b64
+          base64 -d < oben.b64 > oben.json
+          if ! cmp -s oben.json marketplace/schema/manifest.schema.json; then
+            echo "::error::Schema-Kopie weicht von der angehefteten Revision ab."
+            exit 1
+          fi
+          echo "Kopie stimmt mit ${commit} ueberein."
+
+  # -------------------------------------------------------------------------
+  # 3) Rust-Teil der Tauri-Schale.
+  #
+  #    app/src-tauri haengt ueber Pfadabhaengigkeiten an zwei weiteren
+  #    privaten Repositories (gemessen am 24.10.2026):
+  #      ../../../cortex-app-core/crates/cortex-app-core
+  #      ../../../cortex-app-core/crates/cortex-app-updates
+  #        -> nur im Zweig p1-cortex-app-core vorhanden, nicht in main
+  #      und cortex-app-updates/build.rs liest zusaetzlich
+  #      ../../../cortex-app/config/apple-signierung.json
+  #        -> nur im Zweig p3-cortex-app vorhanden, nicht in main
+  #
+  #    Deshalb liegen alle drei Repositories nebeneinander im Arbeitsbereich,
+  #    genau wie lokal unter projects/. Ohne die beiden Lesetoken kann dieser
+  #    Job nicht laufen — der erste Schritt sagt das ausdruecklich, statt
+  #    mit einem unverstaendlichen Fehler abzubrechen.
+  # -------------------------------------------------------------------------
+  cargo:
+    name: cargo test (Tauri-Schale)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cortex-qm
+    steps:
+      - name: Zugangsvoraussetzungen pruefen
+        working-directory: .
+        env:
+          CORE_TOKEN: ${{ secrets.CORTEX_APP_CORE_READ_TOKEN }}
+          APP_TOKEN: ${{ secrets.CORTEX_APP_READ_TOKEN }}
+        run: |
+          set -euo pipefail
+          fehlt=0
+          if [ -z "${CORE_TOKEN:-}" ]; then
+            echo "::error::CORTEX_APP_CORE_READ_TOKEN fehlt (Pfadabhaengigkeit Sanexio/cortex-app-core)."
+            fehlt=1
+          fi
+          if [ -z "${APP_TOKEN:-}" ] && [ -z "${CORE_TOKEN:-}" ]; then
+            echo "::error::CORTEX_APP_READ_TOKEN fehlt (Sanexio/cortex-app, Datei config/apple-signierung.json)."
+            fehlt=1
+          fi
+          exit "$fehlt"
+
+      - uses: actions/checkout@v4
+        with:
+          path: cortex-qm
+          persist-credentials: false
+
+      - name: cortex-app-core daneben auschecken
+        uses: actions/checkout@v4
+        with:
+          repository: Sanexio/cortex-app-core
+          ref: ${{ vars.CORTEX_APP_CORE_REF || 'b565407e970421538db0ad74b20ffafce43992e8' }}
+          token: ${{ secrets.CORTEX_APP_CORE_READ_TOKEN }}
+          path: cortex-app-core
+          persist-credentials: false
+
+      # Nur config/apple-signierung.json wird gebraucht (build.rs von
+      # cortex-app-updates); der Rest des Repositories bleibt ungeholt.
+      - name: cortex-app daneben auschecken (nur config/)
+        uses: actions/checkout@v4
+        with:
+          repository: Sanexio/cortex-app
+          ref: ${{ vars.CORTEX_APP_REF || '077329f159819f1d5dba7fd7b14f93391fea5b80' }}
+          token: ${{ secrets.CORTEX_APP_READ_TOKEN || secrets.CORTEX_APP_CORE_READ_TOKEN }}
+          path: cortex-app
+          sparse-checkout: config
+          persist-credentials: false
+
+      - name: Linux-Systempakete fuer Tauri 2
+        working-directory: .
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libxdo-dev \
+            libssl-dev \
+            build-essential \
+            file \
+            patchelf
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: cortex-qm/app/package-lock.json
+
+      - name: Rust-Werkzeugkette
+        working-directory: .
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+
+      # tauri::generate_context!() liest app/dist zur Compile-Zeit.
+      # Ohne gebautes Frontend scheitert schon das Uebersetzen.
+      - name: Frontend bauen (Voraussetzung fuer generate_context!)
+        working-directory: cortex-qm/app
+        run: |
+          npm ci
+          npm run build
+
+      - name: cargo test
+        working-directory: cortex-qm/app/src-tauri
+        run: cargo test --locked

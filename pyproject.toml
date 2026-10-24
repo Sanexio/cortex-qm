@@ -22,6 +22,12 @@ classifiers = [
 # Keine Laufzeit-Abhaengigkeiten — Stdlib only.
 dependencies = []
 
+# Nur fuer die Testsuite, nicht fuer die Laufzeit: die Marketplace-Pruefung
+# (tests/test_marketplace_manifest.py) validiert gegen ein echtes JSON-Schema.
+# Ein selbstgebauter Validator waere die schlechtere Wahl.
+[project.optional-dependencies]
+test = ["jsonschema>=4.18", "pytest>=7"]
+
 [project.scripts]
 cortex-qm = "cortex_qm.cli:main"
 

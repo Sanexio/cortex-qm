@@ -38,10 +38,43 @@ Ergebnis (macOS): `app/src-tauri/target/release/bundle/macos/Cortex QM.app`
 ### Tests
 
 ```sh
-PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest discover
+python3 -m pip install -e '.[test]'      # einmalig: pytest + jsonschema
+python3 -m pytest -q                      # Wurzelverzeichnis
 cd app && npm test
-cd app/src-tauri && cargo test
+cd app/src-tauri && cargo test --locked
 ```
+
+### Was `cargo test` voraussetzt (gemessen 2026-10-24)
+
+`app/src-tauri` hängt über **Pfadabhängigkeiten** an zwei weiteren privaten
+Repositories, die **neben** `cortex-qm` liegen müssen — so wie lokal unter
+`projects/`:
+
+| Pfad | Repository | Zweig (Stand 24.10.) | Warum |
+|------|------------|----------------------|-------|
+| `../../../cortex-app-core` | `Sanexio/cortex-app-core` | `p1-cortex-app-core` | `cortex-app-core` **und** `cortex-app-updates`; letzteres gibt es in `main` **nicht** |
+| `../../../cortex-app` | `Sanexio/cortex-app` | `p3-cortex-app` | `build.rs` von `cortex-app-updates` liest `config/apple-signierung.json`; in `main` **nicht** vorhanden |
+
+Zusätzlich muss **das Frontend vorher gebaut sein** (`npm ci && npm run build`):
+`tauri::generate_context!()` liest `app/dist` zur Compile-Zeit, sonst scheitert
+schon das Übersetzen.
+
+## CI (`.github/workflows/ci.yml`)
+
+Drei Jobs auf `ubuntu-latest`: `pytest`, Marketplace-Manifest-Validierung und
+`cargo test --locked`. **Nur manuell auslösbar** (`workflow_dispatch`) — dieselbe
+Kostenlinie, die `Sanexio/cortex-app` in seinem Bau-Workflow wörtlich festhält.
+
+Der `cargo`-Job braucht Lesetoken für die beiden privaten Nachbar-Repositories
+(`CORTEX_APP_CORE_READ_TOKEN`, `CORTEX_APP_READ_TOKEN`); fehlen sie, bricht der
+erste Schritt mit klarer Meldung ab, statt unverständlich zu scheitern. Die
+Revisionen sind auf geprüfte Commit-IDs festgenagelt und über die
+Repository-Variablen `CORTEX_APP_CORE_REF` / `CORTEX_APP_REF` überschreibbar.
+
+Die Manifest-Prüfung arbeitet **ohne Netzzugriff** gegen die angeheftete
+Schema-Kopie unter `marketplace/schema/`; ein optionaler Drift-Abgleich geht
+ausschließlich gegen GitHub. Warum `app.json` nicht als Ganzes gegen dieses
+Schema validiert werden kann, steht in `marketplace/schema/README.md`.
 
 ## Noch offen (bewusst nicht in diesem Zweig)
 
@@ -49,7 +82,12 @@ cd app/src-tauri && cargo test
 - **Minisign-Update-Schlüssel** und echter Update-Feed (aktuell Platzhalter-URL + `REPLACE_WITH_MINISIGN_PUBLIC_KEY`).
 - **Tracker- und Kommentar-Werkzeuge** in der UI (CLI vorhanden, noch ohne Datei-Dialog und Tenant-Pfadwahl).
 - **Nexus-Brücke** (Cargo-Feature wie App-Template) — nicht aktiviert.
-- **CI** (GitHub Actions, drei OS) — folgt Marketplace-Welle.
+- **CI auf mehreren Betriebssystemen** — angelegt ist der Linux-Weg
+  (`.github/workflows/ci.yml`); macOS/Windows folgen der Marketplace-Welle.
+  **Noch kein CI-Lauf abgenommen:** GitHub Actions ist im Konto `Sanexio`
+  wegen einer Abrechnungssperre gesperrt (Beleg: Lauf `40118358119` in
+  `Sanexio/workforce-time`, alle Jobs nach 3 s auf `failure`, 0 ausgeführte
+  Schritte). Das ist kontoweit und betrifft diesen Zweig nicht inhaltlich.
 - Symbol **Sanexio-QR**: `marketplace/icon-qr.png` ist vorerst dieselbe Rastergrafik wie `icon.png`; dedizierte QR-Markenvariante durch Design/Codex.
 
 ## Referenzen

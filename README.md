@@ -88,8 +88,17 @@ Diese Bibliothek/CLI ist die Basis für die spätere native App-Auslieferung
 ### Tests
 
 ```bash
-python3 -m unittest discover    # von der Repo-Wurzel, stdlib-only
+python3 -m pip install -e '.[test]'   # einmalig
+python3 -m pytest -q                  # von der Repo-Wurzel
 ```
+
+Die **Laufzeit** bleibt abhängigkeitsfrei (`dependencies = []`). Das
+Test-Extra bringt genau zwei Pakete: `pytest` und `jsonschema`. Letzteres
+braucht `tests/test_marketplace_manifest.py`, das `marketplace/app.json`
+gegen das angeheftete Katalogschema prüft — ein selbstgebauter Validator
+wäre dort die schlechtere Wahl, und ein übersprungener Test wäre ein
+grüner Test ohne Aussage. `python3 -m unittest discover` deckt den
+Kern weiterhin ab, scheitert ohne das Extra aber an diesem einen Modul.
 
 ## Regulatorische Basis (Auszug aus `rules/CORE_RULES.md`)
 
