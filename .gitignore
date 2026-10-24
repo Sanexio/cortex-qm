@@ -43,3 +43,11 @@ dist/
 *.log
 *.pyo
 .tmp/
+
+# Native Einzel-App (Tauri)
+app/node_modules/
+app/dist/
+app/src-tauri/target/
+
+# Immutable local release evidence and signed bundles.
+app/release/

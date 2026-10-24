@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.example/cortex-marketplace/manifest.schema.json",
+  "title": "Cortex Marketplace Manifest",
+  "description": "Katalog-Manifest fuer das Storefront-Modul 'marketplace' (v0). Eine JSON-Datei beschreibt den Store und seine Apps; das Theme rendert daraus die Katalogseite mit App-Kacheln, Download-Knoepfen je Betriebssystem und einem Update-Feed-Link je App. v0 kennt keinen Bezahlweg und keine Lizenzpruefung.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["manifest_version", "store", "apps"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Optionaler Verweis auf diese Schema-Datei (Editor-Komfort)."
+    },
+    "manifest_version": {
+      "const": 1,
+      "description": "Formatversion. v0 des Moduls liest ausschliesslich Version 1; eine spaetere Formataenderung erhoeht diesen Wert."
+    },
+    "store": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Anzeigename des Stores (Seitenueberschrift)."
+        },
+        "description": {
+          "type": "string",
+          "description": "Kurzbeschreibung unter der Ueberschrift."
+        }
+      }
+    },
+    "apps": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Die Apps des Katalogs, in Anzeigereihenfolge. App-Kennungen (id) muessen untereinander eindeutig sein; JSON Schema kann das nicht ausdruecken, der mitgelieferte Validator (validate.php) prueft es zusaetzlich.",
+      "items": { "$ref": "#/$defs/app" }
+    }
+  },
+  "$defs": {
+    "app": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "summary", "version", "downloads", "update_feed"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$",
+          "description": "Stabile, eindeutige Kennung (Slug): Kleinbuchstaben, Ziffern, Bindestriche; 3-64 Zeichen."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Anzeigename der App (Kachel-Titel)."
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300,
+          "description": "Ein- bis Zwei-Satz-Beschreibung auf der Kachel."
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$",
+          "description": "Aktuelle Version (SemVer), rein informativ fuer die Anzeige."
+        },
+        "category": {
+          "type": "string",
+          "description": "Freitext-Kategorie fuer die Kachel-Beschriftung (v0 filtert nicht danach)."
+        },
+        "icon": {
+          "type": "string",
+          "description": "Optionaler Pfad/URL zu einem App-Icon. Fehlt es, rendert das Modul ein Monogramm aus dem Namen."
+        },
+        "downloads": {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "description": "Download je Betriebssystem. Mindestens eines von mac, linux, windows; fehlende Systeme bekommen keinen Knopf.",
+          "properties": {
+            "mac": { "$ref": "#/$defs/download" },
+            "linux": { "$ref": "#/$defs/download" },
+            "windows": { "$ref": "#/$defs/download" }
+          }
+        },
+        "update_feed": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://",
+          "description": "HTTPS-URL des Update-Feeds der App (z. B. Sparkle-Appcast oder eigenes JSON); wird als Link auf der Kachel gezeigt."
+        }
+      }
+    },
+    "download": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["url"],
+      "properties": {
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://",
+          "description": "HTTPS-URL des Installationspakets fuer dieses Betriebssystem."
+        },
+        "filename": {
+          "type": "string",
+          "description": "Optionaler Anzeigename der Datei (z. B. fuer das download-Attribut des Links)."
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Optionale Paketgroesse in Bytes (Anzeige als MB)."
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Optionale SHA-256-Pruefsumme des Pakets (hex, klein)."
+        },
+        "min_os": {
+          "type": "string",
+          "description": "Optionale Mindest-Betriebssystemversion als Anzeigetext (z. B. 'macOS 14')."
+        }
+      }
+    }
+  }
+}
